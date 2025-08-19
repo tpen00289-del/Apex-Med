@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEX.MED - Preparation Meter</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background: url("volume.jpg") no-repeat center center fixed;
+        background-size: cover;
+        min-height: 100vh;
+        color: #fff;
+    }
+
+    .container {
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: rgba(0,0,0,0.4);
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    h1 {
+        font-size: 2em;
+        margin-bottom: 20px;
+    }
+
+    select, button {
+        margin: 5px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    button:hover { opacity: 0.8; }
+
+    canvas { background: transparent !important; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>Preparation Meter</h1>
+
+    <div>
+        <label for="chartType">Select Chart Type:</label>
+        <select id="chartType">
+            <option value="bar">Bar Chart</option>
+            <option value="pie">Pie Chart</option>
+            <option value="line">Line Chart</option>
+            <option value="doughnut">Doughnut Chart</option>
+        </select>
+        <label for="timeRange">Select Time Range:</label>
+        <select id="timeRange">
+            <option value="week">Weekly</option>
+            <option value="month">Monthly</option>
+            <option value="2months">2 Months</option>
+            <option value="3months">3 Months</option>
+            <option value="4months">4 Months</option>
+            <option value="5months">5 Months</option>
+            <option value="6months">6 Months</option>
+            <option value="7months">7 Months</option>
+            <option value="8months">8 Months</option>
+            <option value="9months">9 Months</option>
+            <option value="10months">10 Months</option>
+            <option value="11months">11 Months</option>
+            <option value="year">1 Year</option>
+            <option value="2years">2 Years</option>
+        </select>
+    </div>
+
+    <div>
+        <button onclick="deleteAllData()">Delete All History</button>
+        <button onclick="deleteManualData()">Delete Manually</button>
+    </div>
+
+    <canvas id="barChart" width="900" height="500"></canvas>
+</div>
+
+<script>
+let currentChart = null;
+
+function loadData() {
+    const raw = localStorage.getItem("apex_todo");
+    if (!raw) return [];
+
+    const subjects = JSON.parse(raw);
+    const flatData = [];
+
+    subjects.forEach(subject => {
+        subject.tasks.forEach(task => {
+            flatData.push({
+                subject: subject.subject,
+                status: task.status,
+                date: task.date
+            });
+        });
+    });
+
+    return flatData;
+}
+
+function saveData(filtered) {
+    const grouped = {};
+
+    filtered.forEach(entry => {
+        if (!grouped[entry.subject]) grouped[entry.subject] = [];
+        grouped[entry.subject].push({
+            status: entry.status,
+            text: entry.text || "",
+            date: entry.date
+        });
+    });
+
+    const result = Object.entries(grouped).map(([subject, tasks]) => ({ subject, tasks }));
+    localStorage.setItem("apex_todo", JSON.stringify(result));
+}
+
+function filterByTimeRange(data, range) {
+    const now = new Date();
+    return data.filter(d => {
+        const taskDate = new Date(d.date);
+        const diffDays = (now - taskDate) / (1000 * 60 * 60 * 24);
+        const ranges = {
+            week: 7,
+            month: 30,
+            '2months': 60,
+            '3months': 90,
+            '4months': 120,
+            '5months': 150,
+            '6months': 180,
+            '7months': 210,
+            '8months': 240,
+            '9months': 270,
+            '10months': 300,
+            '11months': 330,
+            year: 365,
+            '2years': 730
+        };
+        return diffDays <= (ranges[range] || Infinity);
+    });
+}
+
+function updateChart() {
+    const chartType = document.getElementById("chartType").value;
+    const timeRange = document.getElementById("timeRange").value;
+
+    let data = loadData();
+    data = filterByTimeRange(data, timeRange);
+
+    const summary = {};
+    data.forEach(d => {
+        if (!summary[d.subject]) summary[d.subject] = { completed: 0, incomplete: 0 };
+        if (d.status === "completed") summary[d.subject].completed++;
+        else summary[d.subject].incomplete++;
+    });
+
+    const labels = Object.keys(summary);
+    const completedData = labels.map(label => summary[label].completed);
+    const incompleteData = labels.map(label => summary[label].incomplete);
+
+    const subjectColors = labels.map((_, index) => {
+        const hue = (index * 360 / labels.length) % 360;
+        return {
+            completed: `hsl(${hue}, 100%, 50%)`,
+            incomplete: `hsl(${hue}, 100%, 30%)`
+        };
+    });
+
+    let chartData;
+
+    if (chartType === "bar" || chartType === "line") {
+        chartData = {
+            labels: labels,
+            datasets: [
+                {
+                    label: "Completed",
+                    data: completedData,
+                    backgroundColor: subjectColors.map(c => c.completed),
+                    borderColor: subjectColors.map(c => c.completed),
+                    borderWidth: 2,
+                    fill: chartType === "line",
+                    tension: 0.3,
+                    pointBackgroundColor: subjectColors.map(c => c.completed),
+                    pointBorderColor: '#fff',
+                    pointRadius: 5,
+                },
+                {
+                    label: "Incomplete",
+                    data: incompleteData,
+                    backgroundColor: subjectColors.map(c => c.incomplete),
+                    borderColor: subjectColors.map(c => c.incomplete),
+                    borderWidth: 2,
+                    fill: chartType === "line",
+                    tension: 0.3,
+                    pointBackgroundColor: subjectColors.map(c => c.incomplete),
+                    pointBorderColor: '#fff',
+                    pointRadius: 5,
+                }
+            ]
+        };
+    } else if (chartType === "pie" || chartType === "doughnut") {
+        const pieLabels = [];
+        const pieData = [];
+        const pieColors = [];
+
+        labels.forEach((label, i) => {
+            pieLabels.push(`${label} - Completed`);
+            pieData.push(completedData[i]);
+            pieColors.push(subjectColors[i].completed);
+
+            pieLabels.push(`${label} - Incomplete`);
+            pieData.push(incompleteData[i]);
+            pieColors.push(subjectColors[i].incomplete);
+        });
+
+        chartData = {
+            labels: pieLabels,
+            datasets: [{
+                label: "Preparation Summary",
+                data: pieData,
+                backgroundColor: pieColors
+            }]
+        };
+    }
+
+    const ctx = document.getElementById("barChart").getContext("2d");
+    if (currentChart) currentChart.destroy();
+    currentChart = new Chart(ctx, {
+        type: chartType,
+        data: chartData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#fff',
+                        font: { weight: 'bold' }
+                    }
+                }
+            },
+            scales: (chartType === "pie" || chartType === "doughnut") ? {} : {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#fff', font: { weight: 'bold' } }
+                },
+                x: {
+                    ticks: { color: '#fff', font: { weight: 'bold' } }
+                }
+            }
+        }
+    });
+}
+
+function deleteAllData() {
+    if (confirm("Are you sure you want to delete ALL history?")) {
+        localStorage.removeItem("apex_todo");
+        updateChart();
+    }
+}
+
+function deleteManualData() {
+    let data = loadData();
+    if (data.length === 0) {
+        alert("No data available");
+        return;
+    }
+
+    const input = prompt("Enter subjects to delete, separated by commas (e.g., Physics,Chemistry):");
+    if (!input) return;
+
+    const toDelete = input.split(",").map(s => s.trim().toLowerCase());
+    const filtered = data.filter(d => !toDelete.includes(d.subject.toLowerCase()));
+
+    saveData(filtered);
+    updateChart();
+}
+
+updateChart();
+setInterval(updateChart, 5000);
+document.getElementById("chartType").addEventListener("change", updateChart);
+document.getElementById("timeRange").addEventListener("change", updateChart);
+</script>
+</body>
+</html>

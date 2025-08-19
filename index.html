@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>APEX.MED - NEET Preparation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-image: url('screenshot.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            color: #FFFFFF;
+            font-size: 1.02em;
+            min-height: 100vh;
+            overflow: hidden; /* particles won't scroll */
+        }
+
+        .homepage-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .about-us, .what-we-offer {
+            padding: 20px;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .large-text {
+            font-size: 1.17em;
+            line-height: 1.5;
+            margin: 15px 0;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-top: 15px;
+        }
+
+        .what-we-offer {
+            width: 30%;
+            font-size: 1.02em;
+        }
+
+        .what-we-offer h2 {
+            color: #28a745;
+            margin: 0 0 15px 0;
+            font-size: 1.22em;
+        }
+
+        .what-we-offer ul {
+            margin: 10px 0;
+            padding-left: 25px;
+            font-size: 0.97em;
+            line-height: 1.4;
+        }
+
+        .start-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            font-size: 1em;
+            cursor: pointer;
+            border-radius: 5px;
+            height: 1.5cm;
+            width: 3.7cm;
+            align-self: flex-end;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .start-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+        }
+
+        .start-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 900px) {
+            .row {
+                flex-direction: column;
+            }
+
+            .what-we-offer {
+                width: 100%;
+                margin-bottom: 20px;
+            }
+
+            .start-btn {
+                align-self: flex-start;
+                margin-top: 10px;
+            }
+        }
+
+        /* 🌈 Particle styles */
+        .star {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: fadeOut 1s linear forwards;
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0);
+            }
+        }
+
+        /* New disclaimer styling */
+        .disclaimer {
+            max-width: 1200px;
+            margin: 30px auto 20px auto;
+            padding: 15px 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            font-size: 0.95em;
+            color: #ffeb3b; /* bright yellow for visibility */
+            text-align: center;
+            box-shadow: 0 0 10px #ffeb3b88;
+        }
+    </style>
+</head>
+<body>
+    <div class="homepage-container">
+        <div class="about-us">
+            <p class="large-text">Welcome to APEX.MED, a dedicated platform created with the sole purpose of supporting NEET aspirants in their academic journey. We understand the challenges that students face, especially when it comes to clearing backlogs and preparing for competitive exams. Our mission is to provide comprehensive resources and guidance to help students overcome these hurdles without any financial burden.</p>
+            <p class="large-text">At APEX.MED, we believe that every student deserves access to quality educational materials and support. That's why we offer our services completely free of charge. Our team is committed to designing a user-friendly website that serves as a valuable study aid, empowering students to study effectively and achieve their goals.</p>
+            <p class="large-text">We are passionate about education and are here to help you brighten your future. Join us on this journey, and let's work together to make your dreams a reality!</p>
+        </div>
+
+        <div class="row">
+            <div class="what-we-offer">
+                <h2>What We Offer</h2>
+                <ul>
+                    <li>User friendly environment</li>
+                    <li>Comprehensive Study Materials: Access notes, guides, and practice questions tailored for NEET</li>
+                    <li>A place where you can track your preparation</li>
+                    <li>And much more</li>
+                </ul>
+            </div>
+
+            <button class="start-btn" onclick="window.location.href='subject.html'">Let's Get Started</button>
+        </div>
+    </div>
+
+    <div class="disclaimer">
+        The app may not contain some features that the above box mentions, but in the future, we will try to implement those changes and make this website totally user-friendly.
+    </div>
+
+    <script>
+        // 🌈 Colorful particle trail effect
+        document.addEventListener("mousemove", function(e) {
+            const star = document.createElement("div");
+            star.classList.add("star");
+
+            // Only your specified colors
+            const colors = [
+                '#FF69B4',          // pink
+                '#28a745',          // green
+                '#0000FF',          // blue
+                'linear-gradient(45deg, #00FFFF, #87CEFA)', // sky blue gradient
+                'linear-gradient(45deg, #D3D3D3, #A9A9A9)', // grey gradient
+                '#0000FF',          // blue
+                '#90EE90',          // light green
+                '#FFB6C1'           // pink
+            ];
+
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            // Check if color is gradient or solid
+            if (color.includes('gradient')) {
+                star.style.background = color;
+            } else {
+                star.style.backgroundColor = color;
+                star.style.boxShadow = `0 0 8px ${color}, 0 0 12px ${color}`;
+            }
+
+            star.style.left = (e.pageX - 3) + "px";
+            star.style.top = (e.pageY - 3) + "px";
+
+            document.body.appendChild(star);
+
+            setTimeout(() => star.remove(), 1000);
+        });
+    </script>
+</body>
+</html>

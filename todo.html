@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEX.MED - To-Do & Preparation Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body {
+margin:0; padding:0; font-family: Arial, sans-serif;
+background: url("logo.jpg") no-repeat center center fixed;
+background-size: cover; min-height:100vh; padding:20px;
+color:#fff;
+}
+.container { max-width: 900px; margin:auto; background: rgba(0,0,0,0.4); padding:20px; border-radius:12px; }
+h1,h2 { margin:0 0 15px 0; }
+input, button { padding:8px; border-radius:6px; border:none; margin-right:6px; }
+button { cursor:pointer; background:#444; color:white; }
+button:hover { background:#222; }
+.subject-section { background: rgba(255,255,255,0.1); margin-bottom:20px; padding:10px; border-radius:10px; }
+ul { list-style:none; padding-left:0; }
+ul li { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
+.task-buttons button { padding:3px 6px; margin-left:4px; font-size:12px; }
+.completed { color:lime; }
+.incomplete { color:red; }
+.chart-container { margin-top:30px; background: rgba(255,255,255,0.1); padding:15px; border-radius:10px; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>APEX.MED - To-Do & Preparation Tracker</h1>
+
+<!-- Subject Input -->
+<div id="subjectInputContainer">
+<input type="text" id="subjectInput" placeholder="Enter subject" onkeydown="if(event.key==='Enter') addSubject()">
+<button onclick="addSubject()">Add Subject</button>
+</div>
+
+<!-- Task Input -->
+<div id="taskInputContainer" style="display:none;">
+<input type="text" id="taskInput" placeholder="Enter task" onkeydown="if(event.key==='Enter') addTask()">
+<button onclick="addTask()">Add Task</button>
+</div>
+
+<!-- Subjects & Tasks -->
+<div id="subjectsContainer"></div>
+
+<!-- Delete Options -->
+<div style="margin-top:20px;">
+<button onclick="deleteOldTasks()">Delete Tasks Older than 2 Years</button>
+<button onclick="clearAllData()">Delete All History</button>
+</div>
+
+<!-- Chart Selection -->
+<div class="chart-container">
+<h2>Performance Charts</h2>
+<select id="chartType" onchange="updateChart()">
+<option value="bar">Bar</option>
+<option value="line">Line</option>
+<option value="pie">Pie</option>
+<option value="doughnut">Doughnut</option>
+<option value="radar">Radar</option>
+</select>
+<canvas id="chartCanvas" height="300"></canvas>
+</div>
+</div>
+
+<script>
+let currentSubjectId = null;
+let currentChart = null;
+
+// --- LocalStorage Helpers ---
+function saveData() {
+const subjects = [];
+document.querySelectorAll('.subject-section').forEach(section=>{
+const subjectName = section.querySelector('h2').textContent;
+const tasks=[];
+section.querySelectorAll('ul li').forEach(li=>{
+tasks.push({
+text: li.childNodes[0].textContent.trim(),
+status: li.classList.contains('completed')?'completed':(li.classList.contains('incomplete')?'incomplete':'pending'),
+date: li.dataset.date || new Date().toISOString().split('T')[0]
+});
+});
+subjects.push({subject:subjectName, tasks});
+});
+localStorage.setItem('apex_todo', JSON.stringify(subjects));
+}
+
+function loadData() {
+const data = JSON.parse(localStorage.getItem('apex_todo') || '[]');
+data.forEach(subject => addSubject(subject.subject, subject.tasks));
+}
+
+// --- Add Subject ---
+function addSubject(name=null, tasks=[]) {
+const subjectName = name || document.getElementById('subjectInput').value.trim();
+if(subjectName==='') return;
+
+const subjectsContainer=document.getElementById('subjectsContainer');
+const section=document.createElement('div');
+section.className='subject-section';
+section.id=`subject-${Date.now()}`;
+
+const header=document.createElement('div');
+header.className='subject-header';
+
+const heading=document.createElement('h2');
+heading.textContent=subjectName;
+
+const actions=document.createElement('div');
+const renameBtn=document.createElement('button');
+renameBtn.textContent='✏️';
+renameBtn.onclick=()=>{ const newName=prompt("New subject name:", heading.textContent); if(newName){heading.textContent=newName.trim(); saveData(); updateChart();} };
+const deleteBtn=document.createElement('button');
+deleteBtn.textContent='🗑️';
+deleteBtn.onclick=()=>{section.remove(); saveData(); updateChart();};
+actions.appendChild(renameBtn); actions.appendChild(deleteBtn);
+
+header.appendChild(heading); header.appendChild(actions);
+section.appendChild(header);
+
+const ul=document.createElement('ul'); section.appendChild(ul);
+subjectsContainer.appendChild(section);
+currentSubjectId=section.id;
+document.getElementById('taskInputContainer').style.display='flex';
+document.getElementById('subjectInput').value=''; document.getElementById('taskInput').focus();
+
+tasks.forEach(t=>addTask(t.text, section.id, t.status, t.date));
+saveData(); updateChart();
+}
+
+// --- Add Task ---
+function addTask(text=null, subjectId=null, status='pending', date=null) {
+const taskText = text || document.getElementById('taskInput').value.trim();
+if(taskText==='' || (!subjectId && !currentSubjectId)) return;
+
+const ul=document.querySelector(`#${subjectId||currentSubjectId} ul`);
+const li=document.createElement('li');
+li.textContent=taskText;
+li.dataset.date=date || new Date().toISOString().split('T')[0];
+if(status==='completed') li.classList.add('completed');
+if(status==='incomplete') li.classList.add('incomplete');
+
+const buttons=document.createElement('div'); buttons.className='task-buttons';
+
+const completeBtn=document.createElement('button'); completeBtn.textContent='✔'; completeBtn.onclick=()=>{ li.classList.add('completed'); li.classList.remove('incomplete'); saveData(); updateChart(); checkSubjectCompletion(subjectId||currentSubjectId);};
+const incompleteBtn=document.createElement('button'); incompleteBtn.textContent='✘'; incompleteBtn.onclick=()=>{ li.classList.add('incomplete'); li.classList.remove('completed'); saveData(); updateChart(); checkSubjectCompletion(subjectId||currentSubjectId);};
+const deleteBtn=document.createElement('button'); deleteBtn.textContent='🗑️'; deleteBtn.onclick=()=>{ li.remove(); saveData(); updateChart(); checkSubjectCompletion(subjectId||currentSubjectId);};
+buttons.appendChild(completeBtn); buttons.appendChild(incompleteBtn); buttons.appendChild(deleteBtn);
+
+li.appendChild(buttons); ul.appendChild(li);
+
+if(!text) { document.getElementById('taskInput').value=''; document.getElementById('taskInput').focus(); }
+checkSubjectCompletion(subjectId||currentSubjectId); saveData(); updateChart();
+}
+
+// --- Check Subject Completion ---
+function checkSubjectCompletion(subjectId){
+const subject=document.getElementById(subjectId);
+const heading=subject.querySelector('h2');
+const tasks=subject.querySelectorAll('ul li');
+if(tasks.length===0){heading.classList.remove('completed'); return;}
+let allComplete=true;
+tasks.forEach(task=>{if(!task.classList.contains('completed')) allComplete=false;});
+if(allComplete) heading.classList.add('completed'); else heading.classList.remove('completed');
+}
+
+// --- Delete Old Tasks (>2 years) ---
+function deleteOldTasks(){
+const cutoff=new Date();
+cutoff.setFullYear(cutoff.getFullYear()-2);
+document.querySelectorAll('.subject-section ul li').forEach(li=>{
+const taskDate=new Date(li.dataset.date);
+if(taskDate<cutoff) li.remove();
+});
+saveData(); updateChart();
+}
+
+// --- Clear All Data ---
+function clearAllData(){ if(confirm("Delete ALL data?")){localStorage.removeItem('apex_todo'); document.getElementById('subjectsContainer').innerHTML=''; updateChart();} }
+
+// --- Chart ---
+function updateChart(){
+const type=document.getElementById('chartType').value;
+const data = JSON.parse(localStorage.getItem('apex_todo') || '[]');
+const subjects={};
+
+data.forEach(sub=>{
+if(!subjects[sub.subject]) subjects[sub.subject]={completed:0,incomplete:0};
+sub.tasks.forEach(t=>{ if(t.status==='completed') subjects[sub.subject].completed++; else subjects[sub.subject].incomplete++; });
+});
+
+const labels=Object.keys(subjects);
+const completedData=labels.map(l=>subjects[l].completed);
+const incompleteData=labels.map(l=>subjects[l].incomplete);
+
+// Generate unique colors for each subject
+const colors = labels.map((_, index) => {
+    const hue = (index * 360 / labels.length) % 360; // Spread colors evenly
+    return {
+        completed: `hsl(${hue}, 100%, 50%)`, // Bright color for completed
+        incomplete: `hsl(${hue}, 100%, 30%)` // Darker shade for incomplete
+    };
+});
+
+// Prepare datasets for the chart
+const datasets = colors.map((color, index) => ({
+    label: labels[index],
+    data: [completedData[index], incompleteData[index]],
+    backgroundColor: [color.completed, color.incomplete]
+}));
+
+// Add a separate dataset for the line chart with a distinct purple color
+const lineChartDataset = {
+    label: 'Task Performance',
+    data: completedData.map((c, index) => c - incompleteData[index]), // Difference for line chart
+    borderColor: 'purple', // Distinct purple color for the line chart
+    backgroundColor: 'rgba(128, 0, 128, 0.2)', // Light purple background
+    fill: true // Fill under the line
+};
+
+// Combine datasets
+const chartData = {
+    labels: ['Completed', 'Incomplete'],
+    datasets: [...datasets, lineChartDataset] // Include the line chart dataset
+};
+
+const ctx=document.getElementById('chartCanvas').getContext('2d');
+if(currentChart) currentChart.destroy();
+currentChart=new Chart(ctx, {type:type, data:chartData, options:{responsive:true, scales:{y:{beginAtZero:true}}}});
+}
+
+// --- Init ---
+window.onload=function(){ loadData(); updateChart(); };
+</script>
+</body>
+</html>

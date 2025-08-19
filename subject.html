@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>APEX.MED - Dashboard</title>
+<style>
+body {
+margin: 0;
+padding: 0;
+font-family: Arial, sans-serif;
+background: url("photo.jpg") no-repeat center center fixed;
+background-size: cover;
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+}
+
+.navbar {
+display: flex;
+align-items: center;
+padding: 15px 30px;
+position: fixed;
+top: 0;
+width: 100%;
+z-index: 10;
+background-color: rgba(255, 255, 255, 0.1);
+backdrop-filter: blur(5px);
+}
+
+.logo {
+font-size: 24px;
+font-weight: bold;
+color: white;
+display: flex;
+align-items: center;
+gap: 5px;
+}
+
+.nav-links {
+list-style: none;
+display: flex;
+gap: 35px;
+margin: 0;
+padding: 0;
+margin-left: auto;
+margin-right: 3cm;
+}
+
+.nav-links li a {
+text-decoration: none;
+color: white;
+font-size: 16px;
+transition: color 0.3s ease;
+}
+
+.nav-links li a:hover {
+color: #FFD700;
+}
+
+.main {
+display: flex;
+margin-top: 120px;
+padding: 20px;
+gap: 40px;
+flex-wrap: wrap;
+}
+
+.graph-container {
+flex: 1;
+min-width: 300px;
+display: flex;
+justify-content: center;
+align-items: center;
+}
+
+#lineGraph {
+width: 100%;
+max-width: 600px;
+height: 400px;
+}
+
+.right-panel {
+flex: 1;
+display: flex;
+flex-direction: column;
+gap: 30px;
+}
+
+.card {
+width: 200px;
+height: 200px;
+background: rgba(0, 0, 0, 0.25);
+display: flex;
+justify-content: center;
+align-items: center;
+text-align: center;
+padding: 20px;
+box-sizing: border-box;
+border-radius: 50%;
+color: white;
+position: relative;
+transition: transform 0.3s ease;
+overflow: visible;
+}
+
+.card::before {
+content: '';
+position: absolute;
+width: 160%;
+height: 160%;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+background: radial-gradient(circle, rgba(0, 123, 255, 0.35), transparent 60%);
+opacity: 0;
+border-radius: 50%;
+transition: opacity 0.3s ease, transform 0.3s ease;
+z-index: 0;
+}
+
+.card:hover {
+transform: scale(1.07);
+}
+
+.card:hover::before {
+opacity: 1;
+transform: translate(-50%, -50%) scale(1.2);
+}
+
+.card-front {
+font-size: 20px;
+font-weight: bold;
+z-index: 1;
+}
+
+.card-description {
+font-size: 13px;
+font-weight: normal;
+margin-top: 10px;
+text-align: center;
+z-index: 1;
+}
+
+.speedometer-container {
+display: flex;
+justify-content: center;
+align-items: center;
+width: 100%;
+}
+
+.study-speedometer {
+width: 250px;
+height: 250px;
+}
+
+#speedText {
+font-size: 20px;
+font-weight: bold;
+fill: white;
+}
+</style>
+</head>
+<body>
+<nav class="navbar">
+<div class="logo">⚕️ APEX.MED</div>
+<ul class="nav-links">
+<li><a href="todo.html">To-Do List</a></li>
+<li><a href="preperation.html">Preparation Meter</a></li>
+<li><a href="rank.html">Rank</a></li>
+</ul>
+</nav>
+
+<div class="main">
+<div class="graph-container">
+<svg id="lineGraph" viewBox="0 0 600 400">
+<polyline fill="none" stroke="white" stroke-width="4"
+points="0,200 100,150 200,100 300,130 400,80 500,120 600,60"
+stroke-dasharray="1000" stroke-dashoffset="1000"/>
+</svg>
+</div>
+
+<div class="right-panel">
+<div class="card" onclick="location.href='todo.html'">
+<div class="card-front">
+To-Do List
+<div class="card-description">📝 Track tasks, set priorities, and mark completed items.</div>
+</div>
+</div>
+
+<div class="card" onclick="location.href='preperation.html'">
+<div class="card-front">
+Preparation Meter
+<div class="card-description">📊 Track study hours, progress, and weekly goals.</div>
+</div>
+</div>
+
+<div class="card" onclick="location.href='rank.html'">
+<div class="card-front">
+Rank
+<div class="card-description">🎖️ See your rank and compare with peers.</div>
+</div>
+</div>
+
+<!-- 🚗 Car-style Speedometer -->
+<div class="speedometer-container">
+<svg class="study-speedometer" viewBox="0 0 200 200">
+<!-- Background arc -->
+<circle cx="100" cy="100" r="80" fill="none" stroke="#444" stroke-width="20"
+stroke-dasharray="180 180" stroke-dashoffset="90" transform="rotate(-90,100,100)"/>
+
+<!-- Tick marks container -->
+<g id="ticks"></g>
+
+<!-- Needle -->
+<line id="needle" x1="100" y1="100" x2="100" y2="30" stroke="#FF0000" stroke-width="4"
+stroke-linecap="round" transform="rotate(-90,100,100)" />
+
+<!-- Center point -->
+<circle cx="100" cy="100" r="5" fill="#FF0000"/>
+
+<!-- Speed value -->
+<text id="speedText" x="100" y="130" text-anchor="middle">0</text>
+</svg>
+</div>
+</div>
+</div>
+
+<script>
+// Animate the line graph
+const line = document.querySelector('#lineGraph polyline');
+line.style.strokeDasharray = line.getTotalLength();
+line.style.strokeDashoffset = line.getTotalLength();
+line.getBoundingClientRect();
+line.style.transition = 'stroke-dashoffset 2s ease-in-out';
+line.style.strokeDashoffset = '0';
+
+// Create tick marks on speedometer
+const tickContainer = document.getElementById("ticks");
+for (let i = 0; i <= 180; i += 10) {
+const x1 = 100 + 80 * Math.cos((i - 90) * Math.PI / 180);
+const y1 = 100 + 80 * Math.sin((i - 90) * Math.PI / 180);
+const x2 = 100 + 70 * Math.cos((i - 90) * Math.PI / 180);
+const y2 = 100 + 70 * Math.sin((i - 90) * Math.PI / 180);
+
+const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+tick.setAttribute("x1", x1);
+tick.setAttribute("y1", y1);
+tick.setAttribute("x2", x2);
+tick.setAttribute("y2", y2);
+tick.setAttribute("stroke", "white");
+tick.setAttribute("stroke-width", "2");
+tickContainer.appendChild(tick);
+}
+
+// Animate car-like speedometer
+function animateCarSpeedometer(targetSpeed = 120, maxSpeed = 180) {
+const needle = document.getElementById("needle");
+const text = document.getElementById("speedText");
+let currentSpeed = 0;
+
+function update() {
+if (currentSpeed <= targetSpeed) {
+const angle = -90 + (currentSpeed / maxSpeed) * 180;
+needle.setAttribute("transform", `rotate(${angle},100,100)`);
+text.textContent = `${currentSpeed}`;
+currentSpeed += 5;
+requestAnimationFrame(update);
+} else {
+text.textContent = `${targetSpeed}`;
+}
+}
+
+update();
+}
+
+window.addEventListener("load", () => {
+animateCarSpeedometer(120); // Adjust target speed here
+});
+</script>
+</body>
+</html>
